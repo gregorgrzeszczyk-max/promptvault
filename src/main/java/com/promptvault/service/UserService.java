@@ -1,9 +1,9 @@
-package promptvault.service;
+package com.promptvault.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import promptvault.model.User;
-import promptvault.repository.UserRepository;
+import com.promptvault.entity.User;
+import com.promptvault.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -83,6 +83,13 @@ public class UserService {
         }
         target.setActive(active);
         userRepository.save(target);
+    }
+
+    /** Flips a user's enabled/disabled status. Used by the admin user list. */
+    @Transactional
+    public void toggleUserActive(Long userId, User currentUser) {
+        User target = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        setUserActive(userId, !target.isActive(), currentUser);
     }
 
     private boolean isBlank(String value) {

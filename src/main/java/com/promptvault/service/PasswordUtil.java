@@ -1,4 +1,4 @@
-package promptvault.service;
+package com.promptvault.service;
 
 import org.springframework.stereotype.Component;
 

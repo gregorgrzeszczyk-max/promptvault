@@ -1,7 +1,7 @@
-package promptvault.repository;
+package com.promptvault.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import promptvault.model.Category;
+import com.promptvault.entity.Category;
 
 import java.util.Optional;
 

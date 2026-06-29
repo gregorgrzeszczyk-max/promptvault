@@ -1,7 +1,7 @@
-package promptvault.repository;
+package com.promptvault.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import promptvault.model.PolicyKeyword;
+import com.promptvault.entity.PolicyKeyword;
 
 import java.util.Optional;
 

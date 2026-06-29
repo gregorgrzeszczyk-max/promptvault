@@ -1,4 +1,4 @@
-package promptvault.controller;
+package com.promptvault.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -6,9 +6,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import promptvault.model.User;
-import promptvault.service.UserService;
+import com.promptvault.entity.User;
+import com.promptvault.service.UserService;
 
 import java.util.Optional;
 
@@ -38,11 +40,11 @@ public class AuthController {
             oldSession.invalidate();
         }
         HttpSession newSession = request.getSession(true);
-        newSession.setAttribute("currentUser", user.get());
-        return "ADMIN".equalsIgnoreCase(user.get().getRole()) ? "redirect:/admin" : "redirect:/dashboard";
+        newSession.setAttribute(SessionUtil.SESSION_USER, user.get());
+        return SessionUtil.isAdmin(user.get()) ? "redirect:/admin" : "redirect:/dashboard";
     }
 
-    @GetMapping("/logout")
+    @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
     public String logout(HttpSession session) {
         session.invalidate();
         return "redirect:/login?logout";

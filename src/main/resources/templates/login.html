@@ -21,11 +21,16 @@
         <p th:text="${error}"></p>
     </div>
 
+    <div th:if="${param.registered}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; margin-bottom:15px;">Registration successful. Please log in.</div>
+    <div th:if="${param.logout}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; margin-bottom:15px;">You have been logged out.</div>
+
     <form action="/login" method="post">
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Log In</button>
     </form>
+
+    <p style="margin-top: 15px;">New here? <a href="/register" style="color:#007bff;">Create an account</a></p>
 
 </div>
 

@@ -15,12 +15,13 @@
 <body>
 <div class="register-container">
     <h2 style="text-align: center; margin-top: 0;">Create an Account</h2>
+    <div th:if="${error}" style="color:#721c24; background:#f8d7da; padding:10px; border-radius:4px; margin-bottom:15px;" th:text="${error}"></div>
     <form th:action="@{/register}" method="post">
-        <div class="form-group"><label>First Name</label><input type="text" name="firstName" required /></div>
-        <div class="form-group"><label>Last Name</label><input type="text" name="lastName" required /></div>
-        <div class="form-group"><label>Username</label><input type="text" name="username" required /></div>
-        <div class="form-group"><label>Email</label><input type="email" name="email" required /></div>
-        <div class="form-group"><label>Password</label><input type="password" name="password" required /></div>
+        <div class="form-group"><label>First Name</label><input type="text" name="firstName" th:value="${user != null ? user.firstName : ''}" required /></div>
+        <div class="form-group"><label>Last Name</label><input type="text" name="lastName" th:value="${user != null ? user.lastName : ''}" required /></div>
+        <div class="form-group"><label>Username</label><input type="text" name="username" th:value="${user != null ? user.username : ''}" required /></div>
+        <div class="form-group"><label>Email</label><input type="email" name="email" th:value="${user != null ? user.email : ''}" required /></div>
+        <div class="form-group"><label>Password</label><input type="password" name="password" required /><small style="color:#666;">At least 8 characters.</small></div>
         <button type="submit">Sign Up</button>
     </form>
     <a href="/login" style="display: block; text-align: center; margin-top: 15px; color: #007bff;">Back to Login</a>

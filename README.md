@@ -4,8 +4,34 @@ PromptVault is a Spring Boot web application for storing, organising and reviewi
 
 The application uses server side rendering with Thymeleaf, a MySQL database for persistence and a simulated AI service, so no external AI API or paid key is required to run it.
 
+## Quick start (no database setup)
+
+If you just want to try the app on your own machine, you do **not** need to install or configure MySQL. The project ships with a built in `demo` profile that runs against an embedded in-memory database and seeds the demo accounts and sample data automatically.
+
+```bash
+# 1. Make sure you are on the branch that contains the fixes
+git checkout fixes
+git pull
+
+# 2. Run the app with the demo profile (Java 17 and Maven required)
+mvn spring-boot:run -Dspring-boot.run.profiles=demo
+```
+
+Then open `http://localhost:8080/login` and sign in with:
+
+| Role  | Username | Password      |
+|-------|----------|---------------|
+| Admin | `admin`  | `admin123`    |
+| User  | `alice`  | `password123` |
+| User  | `bob`    | `password123` |
+
+That is all that is needed to log in and explore every feature. The demo database lives in memory, so it resets each time you restart the app. For the graded submission with persistent MySQL storage, follow [Database setup](#database-setup) and [How to run](#how-to-run) below.
+
+> Tip: while running in demo mode you can also open `http://localhost:8080/h2-console` to inspect the embedded database (JDBC URL `jdbc:h2:mem:promptvault`, user `sa`, no password).
+
 ## Table of contents
 
+- [Quick start (no database setup)](#quick-start-no-database-setup)
 - [Key features](#key-features)
 - [Technology stack](#technology-stack)
 - [Project structure](#project-structure)
@@ -149,11 +175,17 @@ If your MySQL root password differs, change `spring.datasource.password` accordi
 From the project root:
 
 ```bash
-# using a locally installed Maven
+# using a locally installed Maven (default MySQL profile)
 mvn spring-boot:run
 
 # or using the Maven wrapper
 ./mvnw spring-boot:run
+```
+
+If you have not set up MySQL and just want to try the application, run the demo profile instead, which uses an embedded database and needs no configuration:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=demo
 ```
 
 Alternatively, build a runnable jar and start it:
@@ -227,7 +259,9 @@ The test suite loads the full Spring application context, which verifies that al
 
 ## Troubleshooting
 
+- Cannot connect to the database, or you do not want to install MySQL at all: run the app with the demo profile (`mvn spring-boot:run -Dspring-boot.run.profiles=demo`). It uses an embedded database, needs zero configuration and seeds the demo accounts automatically.
 - Access denied for the database user: confirm the username and password in `application.properties` match your MySQL credentials.
 - Unknown database `promptvault`: create the database first, or run `database/schema.sql`.
 - Port 8080 already in use: change `server.port` in `application.properties` to a free port.
+- The login form just reloads or "the security blocks me": make sure you are running the latest code on the `fixes` branch (`git checkout fixes && git pull`), then rebuild with `mvn clean spring-boot:run`. Use the exact credentials from the table above; passwords are case sensitive.
 - The demo accounts do not log in after a manual import: make sure you used `database/seed-data.sql`, which contains the correct password hashes, rather than inserting plain text passwords.

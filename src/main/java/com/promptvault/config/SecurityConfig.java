@@ -25,6 +25,8 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 // Disable HTTP Basic auth.
                 .httpBasic(basic -> basic.disable())
+                // Allow same-origin frames so the H2 console renders in the demo profile.
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 // Let the application's own controllers manage access.
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 800px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .nav-buttons a, .nav-buttons button { padding: 10px 15px; border-radius: 4px; color: white; text-decoration: none; border: none; cursor: pointer; font-size: 14px; }
+    </style>
+</head>
+<body>
+<h1>Admin Vault Control</h1>
+<p>Welcome, Admin! Here are all the registered users in the system:</p>
+
+<div class="nav-buttons" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="/admin/categories" style="background-color: #007bff;">Manage Categories</a>
+    <a href="/admin/keywords" style="background-color: #6c757d;">Manage Policy Keywords</a>
+    <a href="/admin/flagged" style="background-color: #dc3545;">View Flagged Prompts</a>
+    <form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" style="background-color: #343a40;">Log Out</button></form>
+</div>
+
+<table>
+    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+    <tr th:each="user : ${usersList}">
+        <td th:text="${user.username}">Username</td>
+        <td th:text="${user.email}">Email</td>
+        <td th:text="${user.role}">Role</td>
+        <td th:text="${user.isActive ? 'Active' : 'Disabled'}">Status</td>
+        <td>
+            <form th:if="${user.role != 'ADMIN'}" th:action="@{/admin/toggle-user}" method="post">
+                <input type="hidden" name="userId" th:value="${user.id}" />
+                <button type="submit" th:text="${user.isActive ? 'Disable Account' : 'Enable Account'}">Toggle</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

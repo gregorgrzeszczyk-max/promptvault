@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Vault</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 900px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #17a2b8; color: white; }
+    </style>
+</head>
+<body>
+<h1>Community Vault (Shared Prompts)</h1>
+<p><a href="/dashboard">🔙 Back to My Dashboard</a></p>
+<table>
+    <thead><tr><th>Owner</th><th>Title</th><th>Category</th><th>Prompt Text</th></tr></thead>
+    <tbody>
+    <tr th:each="prompt : ${sharedList}">
+        <td th:text="${prompt.user != null ? prompt.user.username : 'Unknown'}">Owner</td>
+        <td th:text="${prompt.title}">Title</td>
+        <td th:text="${prompt.category != null ? prompt.category.name : 'None'}">Category</td>
+        <td th:text="${prompt.promptText}">Text</td>
+    </tr>
+    <tr th:if="${#lists.isEmpty(sharedList)}"><td colspan="4" style="text-align: center;">No shared prompts found.</td></tr>
+    </tbody>
+</table>
+</body>
+</html>

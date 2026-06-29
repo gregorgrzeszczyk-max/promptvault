@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PromptVault Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .nav-buttons a, .nav-buttons button { padding: 10px 15px; border-radius: 4px; color: white; text-decoration: none; border: none; cursor: pointer; font-size: 14px; }
+        table { border-collapse: collapse; width: 100%; max-width: 1000px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #28a745; color: white; }
+        .alert-warning { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin-top: 15px; font-weight: bold; }
+        .alert-success { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+<h1>Welcome to PromptVault!</h1>
+
+<div class="nav-buttons" style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="/user/prompts/new" style="background-color: #28a745;">Create a New Prompt</a>
+    <a href="/user/prompts/shared" style="background-color: #17a2b8;">Browse Community Vault</a>
+    <form th:action="@{/user/prompts/clear}" method="post" style="margin: 0;"><button type="submit" style="background-color: #dc3545;">Clear History</button></form>
+    <form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" style="background-color: #343a40;">Log Out</button></form>
+</div>
+
+<div th:if="${warningMessage}" class="alert-warning" th:text="${warningMessage}"></div>
+<div th:if="${successMessage}" class="alert-success" th:text="${successMessage}"></div>
+
+<h2 style="margin-top: 40px;">My Submission History</h2>
+<table>
+    <thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Vis</th><th>Status</th><th>AI Response</th><th>Actions</th></tr></thead>
+    <tbody>
+    <tr th:each="prompt : ${promptsList}">
+        <td th:text="${#temporals.format(prompt.submissionDate, 'MMM-dd HH:mm')}">Date</td>
+        <td><a th:href="@{/user/prompts/view(id=${prompt.id})}" th:text="${prompt.title}">Title</a></td>
+        <td th:text="${prompt.category != null ? prompt.category.name : 'None'}">Cat</td>
+        <td th:text="${prompt.visibility}">Vis</td>
+        <td th:text="${prompt.isFlagged ? 'Flagged' : 'Clean'}">Status</td>
+        <td th:text="${prompt.aiResponse}">Response</td>
+        <td style="display: flex; gap: 5px;">
+            <a th:href="@{/user/prompts/edit(id=${prompt.id})}" style="background-color: #ffc107; padding: 5px 10px; text-decoration: none; color: black; border-radius: 3px;">Edit</a>
+            <form th:action="@{/user/prompts/delete}" method="post" style="margin:0;"><input type="hidden" name="id" th:value="${prompt.id}" /><button type="submit" style="background-color: #dc3545; padding: 5px 10px; color: white; border: none; border-radius: 3px;">Del</button></form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

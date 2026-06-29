@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Prompt</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .form-container { padding: 20px; border: 1px solid #ccc; max-width: 600px; background-color: #f9f9f9; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], textarea, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        textarea { height: 100px; resize: vertical; }
+        button { padding: 10px 20px; background-color: #ffc107; color: black; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Edit Prompt</h1>
+<p><a href="/dashboard">🔙 Cancel</a></p>
+<div class="form-container">
+    <form th:action="@{/user/prompts/update}" method="post">
+        <input type="hidden" name="id" th:value="${prompt.id}" />
+        <div class="form-group"><label>Title:</label><input type="text" name="title" th:value="${prompt.title}" required /></div>
+        <div class="form-group"><label>The Prompt:</label><textarea name="promptText" th:text="${prompt.promptText}" required></textarea></div>
+        <div class="form-group"><label>Category:</label>
+            <select name="categoryId" required>
+                <option th:each="cat : ${categoriesList}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${prompt.category != null and cat.id == prompt.category.id}"></option>
+            </select>
+        </div>
+        <div class="form-group"><label>Visibility:</label>
+            <select name="visibility">
+                <option value="PRIVATE" th:selected="${prompt.visibility == 'PRIVATE'}">Private</option>
+                <option value="SHARED" th:selected="${prompt.visibility == 'SHARED'}">Shared</option>
+            </select>
+        </div>
+        <button type="submit">Update Prompt</button>
+    </form>
+</div>
+</body>
+</html>

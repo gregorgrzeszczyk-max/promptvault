@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Policy Keywords</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #6c757d; color: white; }
+        .form-container { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; max-width: 600px; background-color: #f9f9f9; }
+        input { margin-right: 10px; padding: 8px; width: 200px; }
+        button { padding: 8px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Policy Keyword Manager</h1>
+<p><a href="/admin">🔙 Back to Admin Dashboard</a></p>
+
+<div class="form-container">
+    <h3>Add a New Banned Keyword</h3>
+    <form th:action="@{/admin/keywords/add}" method="post">
+        <input type="text" name="word" placeholder="e.g., hack, bypass, exploit" required />
+        <button type="submit" style="background-color: #6c757d; color: white; border: none;">Add Keyword</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Banned Word</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="keyword : ${keywordsList}">
+        <td th:text="${keyword.word}">Word</td>
+        <td>
+            <form th:action="@{/admin/keywords/delete}" method="post" style="display:inline;">
+                <input type="hidden" name="keywordId" th:value="${keyword.id}" />
+                <button type="submit" style="background-color: #dc3545; color: white; border: none; border-radius: 3px;">Delete</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

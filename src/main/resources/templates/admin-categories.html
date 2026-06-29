@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Categories</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 800px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #28a745; color: white; }
+        .form-container { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; max-width: 800px; background-color: #f9f9f9; }
+        input { margin-right: 10px; padding: 8px; width: 200px; }
+        button { padding: 8px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Prompt Category Manager</h1>
+<p><a href="/admin">🔙 Back to Admin Dashboard</a></p>
+
+<div class="form-container">
+    <h3>Add a New Category</h3>
+    <form th:action="@{/admin/categories/add}" method="post">
+        <input type="text" name="name" placeholder="Name (e.g., Coding)" required />
+        <input type="text" name="description" placeholder="Brief description..." required />
+        <button type="submit" style="background-color: #28a745; color: white; border: none;">Add Category</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Category Name</th>
+        <th>Description</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="category : ${categoriesList}">
+        <td th:text="${category.name}">Name</td>
+        <td th:text="${category.description}">Description</td>
+        <td>
+            <a th:href="@{/admin/categories/edit(id=${category.id})}"
+               style="background-color: #ffc107; color: black; padding: 8px 15px; text-decoration: none; border-radius: 3px; margin-right: 5px;">Edit</a>
+
+            <form th:action="@{/admin/categories/delete}" method="post" style="display:inline;">
+                <input type="hidden" name="categoryId" th:value="${category.id}" />
+                <button type="submit" style="background-color: #dc3545; color: white; border: none; border-radius: 3px;">Delete</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

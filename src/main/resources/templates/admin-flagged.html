@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Flagged Prompts</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 1000px; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+<h1>Security: Flagged Prompts</h1>
+<p><a href="/admin">🔙 Back to Admin Dashboard</a></p>
+<table>
+    <thead><tr><th>Date</th><th>Owner</th><th>Title</th><th>Category</th><th>Flagged Keyword</th><th>Prompt Text</th></tr></thead>
+    <tbody>
+    <tr th:each="prompt : ${flaggedList}">
+        <td th:text="${#temporals.format(prompt.submissionDate, 'MMM-dd HH:mm')}">Date</td>
+        <td th:text="${prompt.user != null ? prompt.user.username : 'Unknown'}">Owner</td>
+        <td th:text="${prompt.title}">Title</td>
+        <td th:text="${prompt.category != null ? prompt.category.name : 'None'}">Category</td>
+        <td th:text="${prompt.flaggedKeyword}" style="font-weight: bold; color: red;">Keyword</td>
+        <td th:text="${prompt.promptText}">Text</td>
+    </tr>
+    <tr th:if="${#lists.isEmpty(flaggedList)}"><td colspan="6" style="text-align: center;">No flagged prompts. Vault is secure.</td></tr>
+    </tbody>
+</table>
+</body>
+</html>

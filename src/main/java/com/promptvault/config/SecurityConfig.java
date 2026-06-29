@@ -21,6 +21,10 @@ public class SecurityConfig {
         http
                 // Disable CSRF so the plain HTML forms can post without a token.
                 .csrf(csrf -> csrf.disable())
+                // Disable the built-in form login so POST /login reaches AuthController.
+                .formLogin(form -> form.disable())
+                // Disable HTTP Basic auth.
+                .httpBasic(basic -> basic.disable())
                 // Let the application's own controllers manage access.
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();

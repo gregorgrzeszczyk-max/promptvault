@@ -1,4 +1,4 @@
-package promptvault.model;
+package com.promptvault.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

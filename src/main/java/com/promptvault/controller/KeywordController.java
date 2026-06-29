@@ -1,16 +1,19 @@
-package promptvault.controller;
+package com.promptvault.controller;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import promptvault.model.PolicyKeyword;
-import promptvault.model.User;
-import promptvault.repository.PolicyKeywordRepository;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.promptvault.entity.PolicyKeyword;
+import com.promptvault.repository.PolicyKeywordRepository;
 
+/**
+ * Admin management of policy keywords used to flag potentially sensitive
+ * prompts: add, edit and delete.
+ */
 @Controller
 public class KeywordController {
 
@@ -22,45 +25,80 @@ public class KeywordController {
 
     @GetMapping("/admin/keywords")
     public String keywords(HttpSession session, Model model) {
-        if (!isAdmin(currentUser(session))) {
+        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
             return "redirect:/login";
         }
-        model.addAttribute("keywords", policyKeywordRepository.findAll());
-        model.addAttribute("keyword", new PolicyKeyword());
-        return "keywords";
+        model.addAttribute("keywordsList", policyKeywordRepository.findAll());
+        return "admin-keywords";
     }
 
-    @PostMapping("/admin/keywords")
-    public String createKeyword(@ModelAttribute PolicyKeyword keyword, HttpSession session, Model model) {
-        if (!isAdmin(currentUser(session))) {
+    @PostMapping("/admin/keywords/add")
+    public String addKeyword(@RequestParam String word, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
             return "redirect:/login";
         }
-        if (keyword.getWord() == null || keyword.getWord().isBlank() || policyKeywordRepository.existsByWordIgnoreCase(keyword.getWord().trim())) {
-            model.addAttribute("error", "Keyword is required and must be unique");
-            model.addAttribute("keywords", policyKeywordRepository.findAll());
-            model.addAttribute("keyword", keyword);
-            return "keywords";
+        if (word == null || word.isBlank()) {
+            redirectAttributes.addFlashAttribute("error", "Keyword is required.");
+        } else if (policyKeywordRepository.existsByWordIgnoreCase(word.trim())) {
+            redirectAttributes.addFlashAttribute("error", "That keyword already exists.");
+        } else {
+            PolicyKeyword keyword = new PolicyKeyword();
+            keyword.setWord(word.trim());
+            policyKeywordRepository.save(keyword);
+            redirectAttributes.addFlashAttribute("success", "Keyword added.");
         }
-        keyword.setWord(keyword.getWord().trim());
-        policyKeywordRepository.save(keyword);
         return "redirect:/admin/keywords";
     }
 
-    @PostMapping("/admin/keywords/{id}/delete")
-    public String deleteKeyword(@PathVariable Long id, HttpSession session) {
-        if (!isAdmin(currentUser(session))) {
+    @GetMapping("/admin/keywords/edit")
+    public String editKeyword(@RequestParam Long id, HttpSession session, Model model) {
+        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
             return "redirect:/login";
         }
-        policyKeywordRepository.findById(id).ifPresent(policyKeywordRepository::delete);
+        return policyKeywordRepository.findById(id)
+                .map(keyword -> {
+                    model.addAttribute("keyword", keyword);
+                    return "admin-keyword-edit";
+                })
+                .orElse("redirect:/admin/keywords");
+    }
+
+    @PostMapping("/admin/keywords/update")
+    public String updateKeyword(@RequestParam Long id,
+                                @RequestParam String word,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+            return "redirect:/login";
+        }
+        PolicyKeyword keyword = policyKeywordRepository.findById(id).orElse(null);
+        if (keyword == null) {
+            return "redirect:/admin/keywords";
+        }
+        if (word == null || word.isBlank()) {
+            redirectAttributes.addFlashAttribute("error", "Keyword is required.");
+            return "redirect:/admin/keywords/edit?id=" + id;
+        }
+        policyKeywordRepository.findByWordIgnoreCase(word.trim())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresentOrElse(
+                        existing -> redirectAttributes.addFlashAttribute("error",
+                                "Another keyword with that text already exists."),
+                        () -> {
+                            keyword.setWord(word.trim());
+                            policyKeywordRepository.save(keyword);
+                            redirectAttributes.addFlashAttribute("success", "Keyword updated.");
+                        });
         return "redirect:/admin/keywords";
     }
 
-    private boolean isAdmin(User user) {
-        return user != null && "ADMIN".equalsIgnoreCase(user.getRole());
-    }
-
-    private User currentUser(HttpSession session) {
-        Object value = session.getAttribute("currentUser");
-        return value instanceof User ? (User) value : null;
+    @PostMapping("/admin/keywords/delete")
+    public String deleteKeyword(@RequestParam Long keywordId, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+            return "redirect:/login";
+        }
+        policyKeywordRepository.findById(keywordId).ifPresent(policyKeywordRepository::delete);
+        redirectAttributes.addFlashAttribute("success", "Keyword deleted.");
+        return "redirect:/admin/keywords";
     }
 }

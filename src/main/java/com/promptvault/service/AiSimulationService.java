@@ -1,14 +1,14 @@
-package promptvault.service;
+package com.promptvault.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import promptvault.model.PolicyKeyword;
-import promptvault.model.Prompt;
-import promptvault.model.SubmissionHistory;
-import promptvault.model.User;
-import promptvault.repository.PolicyKeywordRepository;
-import promptvault.repository.PromptRepository;
-import promptvault.repository.SubmissionHistoryRepository;
+import com.promptvault.entity.PolicyKeyword;
+import com.promptvault.entity.Prompt;
+import com.promptvault.entity.SubmissionHistory;
+import com.promptvault.entity.User;
+import com.promptvault.repository.PolicyKeywordRepository;
+import com.promptvault.repository.PromptRepository;
+import com.promptvault.repository.SubmissionHistoryRepository;
 
 import java.time.LocalDateTime;
 import java.util.Locale;

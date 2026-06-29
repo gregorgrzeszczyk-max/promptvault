@@ -15,7 +15,10 @@
 </head>
 <body>
 <h1>Prompt Category Manager</h1>
-<p><a href="/admin">🔙 Back to Admin Dashboard</a></p>
+<p><a href="/admin">Back to Admin Dashboard</a></p>
+
+<div th:if="${error}" style="color:#721c24; background:#f8d7da; padding:10px; border-radius:4px; max-width:800px; margin-bottom:12px;" th:text="${error}"></div>
+<div th:if="${success}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; max-width:800px; margin-bottom:12px;" th:text="${success}"></div>
 
 <div class="form-container">
     <h3>Add a New Category</h3>

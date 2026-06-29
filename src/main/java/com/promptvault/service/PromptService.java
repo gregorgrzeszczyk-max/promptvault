@@ -1,43 +1,62 @@
-package promptvault.service;
+package com.promptvault.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import promptvault.model.Category;
-import promptvault.model.Prompt;
-import promptvault.model.User;
-import promptvault.repository.CategoryRepository;
-import promptvault.repository.PromptRepository;
-import promptvault.repository.SubmissionHistoryRepository;
+import com.promptvault.entity.Category;
+import com.promptvault.entity.Prompt;
+import com.promptvault.entity.SubmissionHistory;
+import com.promptvault.entity.User;
+import com.promptvault.repository.CategoryRepository;
+import com.promptvault.repository.PromptRepository;
+import com.promptvault.repository.SubmissionHistoryRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Business logic for managing prompts, including creation, editing, deletion,
+ * submission to the simulated AI assistant and the user's submission history.
+ */
 @Service
 public class PromptService {
+
+    public static final String VISIBILITY_PRIVATE = "PRIVATE";
+    public static final String VISIBILITY_SHARED = "SHARED";
 
     private final PromptRepository promptRepository;
     private final CategoryRepository categoryRepository;
     private final SubmissionHistoryRepository submissionHistoryRepository;
     private final AiSimulationService aiSimulationService;
 
-    public PromptService(PromptRepository promptRepository, CategoryRepository categoryRepository, SubmissionHistoryRepository submissionHistoryRepository, AiSimulationService aiSimulationService) {
+    public PromptService(PromptRepository promptRepository,
+                         CategoryRepository categoryRepository,
+                         SubmissionHistoryRepository submissionHistoryRepository,
+                         AiSimulationService aiSimulationService) {
         this.promptRepository = promptRepository;
         this.categoryRepository = categoryRepository;
         this.submissionHistoryRepository = submissionHistoryRepository;
         this.aiSimulationService = aiSimulationService;
     }
 
+    /** Every prompt that belongs to the given user (private and shared). */
     public List<Prompt> findPromptsForUser(User user) {
         return user == null ? List.of() : promptRepository.findByUserOrderBySubmissionDateDesc(user);
     }
 
-    public List<Prompt> findPublicPrompts() {
-        return promptRepository.findByVisibilityIgnoreCaseOrderBySubmissionDateDesc("PUBLIC");
+    /** Prompts that other users marked as shared, for the community vault. */
+    public List<Prompt> findSharedPrompts() {
+        return promptRepository.findByVisibilityIgnoreCaseOrderBySubmissionDateDesc(VISIBILITY_SHARED);
     }
 
+    /** Prompts flagged for containing one or more policy keywords. */
     public List<Prompt> findFlaggedPrompts() {
         return promptRepository.findByIsFlaggedTrueOrderBySubmissionDateDesc();
+    }
+
+    /** Submission history for the given user, most recent first. */
+    public List<SubmissionHistory> findHistoryForUser(User user) {
+        return user == null ? List.of() : submissionHistoryRepository.findByUserOrderBySubmissionDateDesc(user);
     }
 
     public Optional<Prompt> findOwnedPrompt(Long id, User user) {
@@ -50,13 +69,60 @@ public class PromptService {
     @Transactional
     public Prompt savePrompt(Prompt prompt, Long categoryId, User user) {
         validatePrompt(prompt, categoryId, user);
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new IllegalArgumentException("Category not found"));
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
         prompt.setTitle(prompt.getTitle().trim());
         prompt.setPromptText(prompt.getPromptText().trim());
         prompt.setVisibility(normalizeVisibility(prompt.getVisibility()));
         prompt.setCategory(category);
         prompt.setUser(user);
-        prompt.setSubmissionDate(LocalDateTime.now());
+        if (prompt.getSubmissionDate() == null) {
+            prompt.setSubmissionDate(LocalDateTime.now());
+        }
+        applyPolicyFlag(prompt);
+        return promptRepository.save(prompt);
+    }
+
+    @Transactional
+    public Prompt updateOwnedPrompt(Long id, Prompt updatedPrompt, Long categoryId, User user) {
+        Prompt existing = findOwnedPrompt(id, user)
+                .orElseThrow(() -> new IllegalArgumentException("Prompt not found or not owned by you"));
+        existing.setTitle(updatedPrompt.getTitle());
+        existing.setPromptText(updatedPrompt.getPromptText());
+        existing.setVisibility(updatedPrompt.getVisibility());
+        return savePrompt(existing, categoryId, user);
+    }
+
+    /** Submits an owned prompt to the simulated AI and stores the history entry. */
+    @Transactional
+    public Prompt submitOwnedPrompt(Long id, User user) {
+        Prompt prompt = findOwnedPrompt(id, user)
+                .orElseThrow(() -> new IllegalArgumentException("Prompt not found or not owned by you"));
+        return aiSimulationService.submitPromptToAiAndStoreHistory(prompt, user);
+    }
+
+    @Transactional
+    public void deleteOwnedPrompt(Long id, User user) {
+        Prompt prompt = findOwnedPrompt(id, user)
+                .orElseThrow(() -> new IllegalArgumentException("Prompt not found or not owned by you"));
+        submissionHistoryRepository.deleteByPrompt(prompt);
+        promptRepository.delete(prompt);
+    }
+
+    /** Clears the submission history that belongs to the given user. */
+    @Transactional
+    public void clearHistoryForUser(User user) {
+        if (user != null) {
+            submissionHistoryRepository.deleteByUser(user);
+        }
+    }
+
+    public long countByCategory(Category category) {
+        return category == null ? 0 : promptRepository.countByCategory(category);
+    }
+
+    /** Flags the prompt when its text contains a registered policy keyword. */
+    private void applyPolicyFlag(Prompt prompt) {
         aiSimulationService.findMatchingPolicyKeyword(prompt.getPromptText()).ifPresentOrElse(
                 word -> {
                     prompt.setFlagged(true);
@@ -67,33 +133,6 @@ public class PromptService {
                     prompt.setFlaggedKeyword(null);
                 }
         );
-        return promptRepository.save(prompt);
-    }
-
-    @Transactional
-    public Prompt updateOwnedPrompt(Long id, Prompt updatedPrompt, Long categoryId, User user) {
-        Prompt existing = findOwnedPrompt(id, user).orElseThrow(() -> new IllegalArgumentException("Prompt not found"));
-        existing.setTitle(updatedPrompt.getTitle());
-        existing.setPromptText(updatedPrompt.getPromptText());
-        existing.setVisibility(updatedPrompt.getVisibility());
-        return savePrompt(existing, categoryId, user);
-    }
-
-    @Transactional
-    public Prompt submitOwnedPrompt(Long id, User user) {
-        Prompt prompt = findOwnedPrompt(id, user).orElseThrow(() -> new IllegalArgumentException("Prompt not found"));
-        return aiSimulationService.submitPromptToAiAndStoreHistory(prompt, user);
-    }
-
-    @Transactional
-    public void deleteOwnedPrompt(Long id, User user) {
-        Prompt prompt = findOwnedPrompt(id, user).orElseThrow(() -> new IllegalArgumentException("Prompt not found"));
-        submissionHistoryRepository.deleteByPrompt(prompt);
-        promptRepository.delete(prompt);
-    }
-
-    public long countByCategory(Category category) {
-        return category == null ? 0 : promptRepository.countByCategory(category);
     }
 
     private void validatePrompt(Prompt prompt, Long categoryId, User user) {
@@ -110,8 +149,8 @@ public class PromptService {
 
     private String normalizeVisibility(String visibility) {
         if (visibility == null || visibility.isBlank()) {
-            return "PRIVATE";
+            return VISIBILITY_PRIVATE;
         }
-        return "PUBLIC".equalsIgnoreCase(visibility.trim()) ? "PUBLIC" : "PRIVATE";
+        return VISIBILITY_SHARED.equalsIgnoreCase(visibility.trim()) ? VISIBILITY_SHARED : VISIBILITY_PRIVATE;
     }
 }

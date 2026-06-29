@@ -15,7 +15,8 @@
 </head>
 <body>
 <h1>Edit Prompt</h1>
-<p><a href="/dashboard">🔙 Cancel</a></p>
+<p><a href="/dashboard">Cancel</a></p>
+<div th:if="${error}" style="color:#721c24; background:#f8d7da; padding:10px; border-radius:4px; max-width:600px; margin-bottom:15px;" th:text="${error}"></div>
 <div class="form-container">
     <form th:action="@{/user/prompts/update}" method="post">
         <input type="hidden" name="id" th:value="${prompt.id}" />

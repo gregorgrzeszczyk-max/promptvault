@@ -15,12 +15,16 @@
 </head>
 <body>
 <h1>Policy Keyword Manager</h1>
-<p><a href="/admin">🔙 Back to Admin Dashboard</a></p>
+<p><a href="/admin">Back to Admin Dashboard</a></p>
+<p>Prompts that contain any of these keywords are automatically flagged for review.</p>
+
+<div th:if="${error}" style="color:#721c24; background:#f8d7da; padding:10px; border-radius:4px; max-width:600px; margin-bottom:12px;" th:text="${error}"></div>
+<div th:if="${success}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; max-width:600px; margin-bottom:12px;" th:text="${success}"></div>
 
 <div class="form-container">
-    <h3>Add a New Banned Keyword</h3>
+    <h3>Add a New Policy Keyword</h3>
     <form th:action="@{/admin/keywords/add}" method="post">
-        <input type="text" name="word" placeholder="e.g., hack, bypass, exploit" required />
+        <input type="text" name="word" placeholder="e.g., password, api key, secret" required />
         <button type="submit" style="background-color: #6c757d; color: white; border: none;">Add Keyword</button>
     </form>
 </div>
@@ -36,12 +40,15 @@
     <tr th:each="keyword : ${keywordsList}">
         <td th:text="${keyword.word}">Word</td>
         <td>
+            <a th:href="@{/admin/keywords/edit(id=${keyword.id})}"
+               style="background-color: #ffc107; color: black; padding: 8px 15px; text-decoration: none; border-radius: 3px; margin-right: 5px;">Edit</a>
             <form th:action="@{/admin/keywords/delete}" method="post" style="display:inline;">
                 <input type="hidden" name="keywordId" th:value="${keyword.id}" />
                 <button type="submit" style="background-color: #dc3545; color: white; border: none; border-radius: 3px;">Delete</button>
             </form>
         </td>
     </tr>
+    <tr th:if="${#lists.isEmpty(keywordsList)}"><td colspan="2" style="text-align:center;">No policy keywords defined yet.</td></tr>
     </tbody>
 </table>
 </body>

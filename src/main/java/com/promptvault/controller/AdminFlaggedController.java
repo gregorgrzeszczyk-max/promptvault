@@ -1,12 +1,15 @@
-package promptvault.controller;
+package com.promptvault.controller;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import promptvault.model.User;
-import promptvault.service.PromptService;
+import com.promptvault.entity.User;
+import com.promptvault.service.PromptService;
 
+/**
+ * Lets an admin review prompts that were flagged for containing policy keywords.
+ */
 @Controller
 public class AdminFlaggedController {
 
@@ -18,16 +21,11 @@ public class AdminFlaggedController {
 
     @GetMapping("/admin/flagged")
     public String flaggedPrompts(HttpSession session, Model model) {
-        User currentUser = currentUser(session);
-        if (currentUser == null || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+        User currentUser = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(currentUser)) {
             return "redirect:/login";
         }
-        model.addAttribute("flaggedPrompts", promptService.findFlaggedPrompts());
+        model.addAttribute("flaggedList", promptService.findFlaggedPrompts());
         return "admin-flagged";
-    }
-
-    private User currentUser(HttpSession session) {
-        Object value = session.getAttribute("currentUser");
-        return value instanceof User ? (User) value : null;
     }
 }

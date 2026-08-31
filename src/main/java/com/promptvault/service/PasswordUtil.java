@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -36,8 +35,11 @@ public class PasswordUtil {
         if (rawPassword == null || storedPassword == null) {
             return false;
         }
+        // PVAULT-023 FIX: Removed plaintext fallback comparison.
+        // All stored passwords must be PBKDF2 hashes. Legacy plaintext passwords
+        // (if any exist in the DB) will simply fail to match — users must reset them.
         if (!isHash(storedPassword)) {
-            return MessageDigest.isEqual(rawPassword.getBytes(StandardCharsets.UTF_8), storedPassword.getBytes(StandardCharsets.UTF_8));
+            return false;
         }
         try {
             String[] parts = storedPassword.split("\\$");

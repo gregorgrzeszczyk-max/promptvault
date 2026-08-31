@@ -8,19 +8,26 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.promptvault.entity.PolicyKeyword;
+import com.promptvault.entity.User;
 import com.promptvault.repository.PolicyKeywordRepository;
+import com.promptvault.service.SecurityAuditLogger;
 
 /**
  * Admin management of policy keywords used to flag potentially sensitive
  * prompts: add, edit and delete.
+ *
+ * PVAULT-P2-02 — Security audit logging (OWASP A09, CWE-778): all policy
+ * keyword changes are recorded in the security audit log.
  */
 @Controller
 public class KeywordController {
 
     private final PolicyKeywordRepository policyKeywordRepository;
+    private final SecurityAuditLogger auditLogger;
 
-    public KeywordController(PolicyKeywordRepository policyKeywordRepository) {
+    public KeywordController(PolicyKeywordRepository policyKeywordRepository, SecurityAuditLogger auditLogger) {
         this.policyKeywordRepository = policyKeywordRepository;
+        this.auditLogger = auditLogger;
     }
 
     @GetMapping("/admin/keywords")
@@ -34,7 +41,8 @@ public class KeywordController {
 
     @PostMapping("/admin/keywords/add")
     public String addKeyword(@RequestParam String word, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+        User admin = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(admin)) {
             return "redirect:/login";
         }
         if (word == null || word.isBlank()) {
@@ -45,6 +53,7 @@ public class KeywordController {
             PolicyKeyword keyword = new PolicyKeyword();
             keyword.setWord(word.trim());
             policyKeywordRepository.save(keyword);
+            auditLogger.adminKeywordChange(admin.getUsername(), "added", word.trim());
             redirectAttributes.addFlashAttribute("success", "Keyword added.");
         }
         return "redirect:/admin/keywords";
@@ -68,7 +77,8 @@ public class KeywordController {
                                 @RequestParam String word,
                                 HttpSession session,
                                 RedirectAttributes redirectAttributes) {
-        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+        User admin = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(admin)) {
             return "redirect:/login";
         }
         PolicyKeyword keyword = policyKeywordRepository.findById(id).orElse(null);
@@ -87,6 +97,7 @@ public class KeywordController {
                         () -> {
                             keyword.setWord(word.trim());
                             policyKeywordRepository.save(keyword);
+                            auditLogger.adminKeywordChange(admin.getUsername(), "updated", word.trim());
                             redirectAttributes.addFlashAttribute("success", "Keyword updated.");
                         });
         return "redirect:/admin/keywords";

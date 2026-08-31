@@ -73,6 +73,7 @@ CREATE TABLE prompts (
     user_id         BIGINT       NOT NULL,
     submission_date DATETIME     NULL,
     ai_response     TEXT         NULL,
+    version         BIGINT       NULL,
     PRIMARY KEY (id),
     KEY idx_prompt_user (user_id),
     KEY idx_prompt_visibility (visibility),

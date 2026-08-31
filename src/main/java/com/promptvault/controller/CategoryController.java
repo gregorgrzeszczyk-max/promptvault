@@ -8,21 +8,29 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.promptvault.entity.Category;
+import com.promptvault.entity.User;
 import com.promptvault.repository.CategoryRepository;
 import com.promptvault.service.PromptService;
+import com.promptvault.service.SecurityAuditLogger;
 
 /**
  * Admin management of prompt categories: add, edit and delete.
+ *
+ * PVAULT-P2-02 — Security audit logging (OWASP A09, CWE-778): all category
+ * changes are recorded in the security audit log.
  */
 @Controller
 public class CategoryController {
 
     private final CategoryRepository categoryRepository;
     private final PromptService promptService;
+    private final SecurityAuditLogger auditLogger;
 
-    public CategoryController(CategoryRepository categoryRepository, PromptService promptService) {
+    public CategoryController(CategoryRepository categoryRepository, PromptService promptService,
+                              SecurityAuditLogger auditLogger) {
         this.categoryRepository = categoryRepository;
         this.promptService = promptService;
+        this.auditLogger = auditLogger;
     }
 
     @GetMapping("/admin/categories")
@@ -39,7 +47,8 @@ public class CategoryController {
                               @RequestParam(required = false) String description,
                               HttpSession session,
                               RedirectAttributes redirectAttributes) {
-        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+        User admin = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(admin)) {
             return "redirect:/login";
         }
         if (name == null || name.isBlank()) {
@@ -51,6 +60,7 @@ public class CategoryController {
             category.setName(name.trim());
             category.setDescription(description);
             categoryRepository.save(category);
+            auditLogger.adminCategoryChange(admin.getUsername(), "added", name.trim());
             redirectAttributes.addFlashAttribute("success", "Category added.");
         }
         return "redirect:/admin/categories";
@@ -75,7 +85,8 @@ public class CategoryController {
                                  @RequestParam(required = false) String description,
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
-        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+        User admin = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(admin)) {
             return "redirect:/login";
         }
         Category category = categoryRepository.findById(id).orElse(null);
@@ -95,6 +106,7 @@ public class CategoryController {
                             category.setName(name.trim());
                             category.setDescription(description);
                             categoryRepository.save(category);
+                            auditLogger.adminCategoryChange(admin.getUsername(), "updated", name.trim());
                             redirectAttributes.addFlashAttribute("success", "Category updated.");
                         });
         return "redirect:/admin/categories";
@@ -102,7 +114,8 @@ public class CategoryController {
 
     @PostMapping("/admin/categories/delete")
     public String deleteCategory(@RequestParam Long categoryId, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (!SessionUtil.isAdmin(SessionUtil.currentUser(session))) {
+        User admin = SessionUtil.currentUser(session);
+        if (!SessionUtil.isAdmin(admin)) {
             return "redirect:/login";
         }
         Category category = categoryRepository.findById(categoryId).orElse(null);
@@ -114,6 +127,7 @@ public class CategoryController {
                     "This category cannot be deleted because prompts are assigned to it.");
         } else {
             categoryRepository.delete(category);
+            auditLogger.adminCategoryChange(admin.getUsername(), "deleted", category.getName());
             redirectAttributes.addFlashAttribute("success", "Category deleted.");
         }
         return "redirect:/admin/categories";

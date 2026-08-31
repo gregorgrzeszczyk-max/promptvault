@@ -28,15 +28,18 @@ public class PromptService {
     private final CategoryRepository categoryRepository;
     private final SubmissionHistoryRepository submissionHistoryRepository;
     private final AiSimulationService aiSimulationService;
+    private final SecurityAuditLogger auditLogger;
 
     public PromptService(PromptRepository promptRepository,
                          CategoryRepository categoryRepository,
                          SubmissionHistoryRepository submissionHistoryRepository,
-                         AiSimulationService aiSimulationService) {
+                         AiSimulationService aiSimulationService,
+                         SecurityAuditLogger auditLogger) {
         this.promptRepository = promptRepository;
         this.categoryRepository = categoryRepository;
         this.submissionHistoryRepository = submissionHistoryRepository;
         this.aiSimulationService = aiSimulationService;
+        this.auditLogger = auditLogger;
     }
 
     /** Every prompt that belongs to the given user (private and shared). */
@@ -121,18 +124,36 @@ public class PromptService {
         return category == null ? 0 : promptRepository.countByCategory(category);
     }
 
-    /** Flags the prompt when its text contains a registered policy keyword. */
+    /**
+     * Flags the prompt when its text contains a registered policy keyword.
+     *
+     * PVAULT-P3-18 — Fail-secure policy check (OWASP A04, CWE-636): if the
+     * keyword lookup itself fails, the prompt is flagged for admin review
+     * rather than silently passing the policy gate.
+     * PVAULT-P2-02 — flagged prompts are recorded in the security audit log
+     * with masked content (CWE-532).
+     */
     private void applyPolicyFlag(Prompt prompt) {
-        aiSimulationService.findMatchingPolicyKeyword(prompt.getPromptText()).ifPresentOrElse(
-                word -> {
-                    prompt.setFlagged(true);
-                    prompt.setFlaggedKeyword(word);
-                },
-                () -> {
-                    prompt.setFlagged(false);
-                    prompt.setFlaggedKeyword(null);
-                }
-        );
+        try {
+            aiSimulationService.findMatchingPolicyKeyword(prompt.getPromptText()).ifPresentOrElse(
+                    word -> {
+                        prompt.setFlagged(true);
+                        prompt.setFlaggedKeyword(word);
+                        auditLogger.promptFlagged(
+                                prompt.getUser() != null ? prompt.getUser().getUsername() : null,
+                                prompt.getId(), word, prompt.getPromptText());
+                    },
+                    () -> {
+                        prompt.setFlagged(false);
+                        prompt.setFlaggedKeyword(null);
+                    }
+            );
+        } catch (RuntimeException ex) {
+            // Fail secure: treat an unavailable policy engine as a potential violation.
+            prompt.setFlagged(true);
+            prompt.setFlaggedKeyword("policy-check-unavailable");
+            auditLogger.policyCheckFailure(prompt.getId(), ex.getClass().getSimpleName());
+        }
     }
 
     private void validatePrompt(Prompt prompt, Long categoryId, User user) {

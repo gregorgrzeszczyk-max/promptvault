@@ -24,7 +24,8 @@
     <div th:if="${param.registered}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; margin-bottom:15px;">Registration successful. Please log in.</div>
     <div th:if="${param.logout}" style="color:#155724; background:#d4edda; padding:10px; border-radius:4px; margin-bottom:15px;">You have been logged out.</div>
 
-    <form action="/login" method="post">
+    <!-- PVAULT-P2: th:action ensures the CSRF token is injected automatically (CWE-352) -->
+    <form th:action="@{/login}" method="post">
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Log In</button>

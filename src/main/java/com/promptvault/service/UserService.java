@@ -56,8 +56,16 @@ public class UserService {
         if (isBlank(user.getUsername()) || isBlank(user.getPassword()) || isBlank(user.getEmail()) || isBlank(user.getFirstName()) || isBlank(user.getLastName())) {
             throw new IllegalArgumentException("All registration fields are required");
         }
-        if (user.getPassword().trim().length() < 8) {
-            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        // PVAULT-P3-16 — Password strength policy (CWE-521, OWASP A07).
+        // Defence-in-depth: the registration DTO enforces the same rules via
+        // Bean Validation, but the service layer re-checks so no code path can
+        // bypass the policy.
+        String password = user.getPassword().trim();
+        if (password.length() < 8 || password.length() > 128) {
+            throw new IllegalArgumentException("Password must be between 8 and 128 characters long");
+        }
+        if (!password.matches("^(?=.*[A-Za-z])(?=.*\\d).*$")) {
+            throw new IllegalArgumentException("Password must contain at least one letter and one digit");
         }
         if (userRepository.existsByUsernameIgnoreCase(user.getUsername().trim())) {
             throw new IllegalArgumentException("Username is already in use");

@@ -1,6 +1,7 @@
 package com.promptvault.component;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import com.promptvault.entity.Category;
@@ -16,8 +17,12 @@ import com.promptvault.repository.UserRepository;
 import com.promptvault.service.PasswordUtil;
 import com.promptvault.service.PromptService;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Seeds the database with sample content on first startup so the application
@@ -25,12 +30,20 @@ import java.util.List;
  * users, prompt categories, policy keywords and a mix of private and shared
  * prompts (including some that are flagged for containing policy keywords).
  *
+ * PVAULT-006: This seeder is restricted to the "dev" and "demo" Spring profiles
+ * only. It must never run in production. The admin password is randomly generated
+ * on first seed and printed to the application log so that it can be retrieved
+ * and immediately changed; it is not stored anywhere else in plaintext.
+ *
  * Every section is guarded so the seeder does nothing once the data exists,
  * making it safe to run on every restart.
  */
 @Component
 @Order(1)
+@Profile({"dev", "demo"})
 public class DataSeeder implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
@@ -62,9 +75,27 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        createUserIfMissing("admin", "admin123", "ADMIN", "System", "Administrator", "admin@promptvault.local");
+        // PVAULT-006: Generate a random admin password instead of using a
+        // hardcoded default. The generated password is logged once so it can
+        // be retrieved from the startup logs and then changed immediately.
+        if (!userRepository.existsByUsernameIgnoreCase("admin")) {
+            String randomAdminPassword = generateRandomPassword();
+            createUserIfMissing("admin", randomAdminPassword, "ADMIN", "System", "Administrator", "admin@promptvault.local");
+            log.warn("======================================================");
+            log.warn("ADMIN ACCOUNT CREATED — CHANGE THIS PASSWORD IMMEDIATELY");
+            log.warn("Username : admin");
+            log.warn("Password : {}", randomAdminPassword);
+            log.warn("======================================================");
+        }
         createUserIfMissing("alice", "password123", "USER", "Alice", "Johnson", "alice@promptvault.local");
         createUserIfMissing("bob", "password123", "USER", "Bob", "Smith", "bob@promptvault.local");
+    }
+
+    /** Returns a cryptographically random 16-character alphanumeric password. */
+    private String generateRandomPassword() {
+        byte[] bytes = new byte[12];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void createUserIfMissing(String username, String rawPassword, String role,

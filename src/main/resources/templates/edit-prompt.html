@@ -24,7 +24,7 @@
         <div class="form-group"><label>The Prompt:</label><textarea name="promptText" th:text="${prompt.promptText}" required></textarea></div>
         <div class="form-group"><label>Category:</label>
             <select name="categoryId" required>
-                <option th:each="cat : ${categoriesList}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${prompt.category != null and cat.id == prompt.category.id}"></option>
+                <option th:each="cat : ${categoriesList}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${prompt.categoryId != null and cat.id == prompt.categoryId}"></option>
             </select>
         </div>
         <div class="form-group"><label>Visibility:</label>

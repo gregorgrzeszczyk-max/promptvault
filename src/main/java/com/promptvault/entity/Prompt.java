@@ -54,6 +54,16 @@ public class Prompt {
     @Column(name = "submission_date")
     private LocalDateTime submissionDate;
 
+    /**
+     * PVAULT-P3-13 — Optimistic locking (OWASP A10, CWE-362): concurrent edits
+     * of the same prompt now fail with an OptimisticLockingFailureException
+     * (handled by the global exception handler) instead of silently
+     * overwriting each other's visibility/ownership state.
+     */
+    @jakarta.persistence.Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(columnDefinition = "TEXT")
     private String aiResponse;
 
@@ -78,6 +88,8 @@ public class Prompt {
     public void setUser(User user) { this.user = user; }
     public LocalDateTime getSubmissionDate() { return submissionDate; }
     public void setSubmissionDate(LocalDateTime submissionDate) { this.submissionDate = submissionDate; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
     public String getAiResponse() { return aiResponse; }
     public void setAiResponse(String aiResponse) { this.aiResponse = aiResponse; }
 }

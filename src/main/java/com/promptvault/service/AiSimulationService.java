@@ -20,11 +20,13 @@ public class AiSimulationService {
     private final PolicyKeywordRepository policyKeywordRepository;
     private final PromptRepository promptRepository;
     private final SubmissionHistoryRepository submissionHistoryRepository;
+    private final SecurityAuditLogger auditLogger;
 
-    public AiSimulationService(PolicyKeywordRepository policyKeywordRepository, PromptRepository promptRepository, SubmissionHistoryRepository submissionHistoryRepository) {
+    public AiSimulationService(PolicyKeywordRepository policyKeywordRepository, PromptRepository promptRepository, SubmissionHistoryRepository submissionHistoryRepository, SecurityAuditLogger auditLogger) {
         this.policyKeywordRepository = policyKeywordRepository;
         this.promptRepository = promptRepository;
         this.submissionHistoryRepository = submissionHistoryRepository;
+        this.auditLogger = auditLogger;
     }
 
     public Optional<String> findMatchingPolicyKeyword(String promptText) {
@@ -52,10 +54,21 @@ public class AiSimulationService {
             throw new IllegalArgumentException("Prompt and user are required");
         }
         Prompt managedPrompt = promptRepository.findByIdAndUser(prompt.getId(), user).orElseThrow(() -> new IllegalArgumentException("Prompt not found"));
-        Optional<String> matchedKeyword = findMatchingPolicyKeyword(managedPrompt.getPromptText());
+        // PVAULT-P3-18 — Fail-secure policy check (OWASP A04, CWE-636): if the
+        // keyword lookup fails, the prompt is flagged for admin review instead
+        // of silently passing the policy gate.
         String aiResponse = simulateAiResponse(managedPrompt.getPromptText());
-        managedPrompt.setFlagged(matchedKeyword.isPresent());
-        managedPrompt.setFlaggedKeyword(matchedKeyword.orElse(null));
+        try {
+            Optional<String> matchedKeyword = findMatchingPolicyKeyword(managedPrompt.getPromptText());
+            managedPrompt.setFlagged(matchedKeyword.isPresent());
+            managedPrompt.setFlaggedKeyword(matchedKeyword.orElse(null));
+            matchedKeyword.ifPresent(word -> auditLogger.promptFlagged(
+                    user.getUsername(), managedPrompt.getId(), word, managedPrompt.getPromptText()));
+        } catch (RuntimeException ex) {
+            managedPrompt.setFlagged(true);
+            managedPrompt.setFlaggedKeyword("policy-check-unavailable");
+            auditLogger.policyCheckFailure(managedPrompt.getId(), ex.getClass().getSimpleName());
+        }
         managedPrompt.setAiResponse(aiResponse);
         managedPrompt.setSubmissionDate(LocalDateTime.now());
         Prompt savedPrompt = promptRepository.save(managedPrompt);
